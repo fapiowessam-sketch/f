@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fapio Social - منصة التواصل الاجتماعي</title>
+    <style>
+        :root {
+            --primary: #1877f2;
+            --primary-hover: #166fe5;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #050505;
+            --muted: #65676b;
+            --danger: #e41e3f;
+            --success: #42b72a;
+            --admin-bg: #fff8e1;
+            --admin-border: #ffb300;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+
+        nav {
+            background: var(--card); padding: 10px 25px; position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .logo { color: var(--primary); font-size: 1.6rem; font-weight: 800; margin: 0; cursor: pointer; }
+        .nav-links { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .nav-btn {
+            background: #e4e6eb; color: var(--text); border: none; padding: 8px 14px;
+            border-radius: 8px; cursor: pointer; font-weight: 600;
+        }
+        .nav-btn.active { background: #e7f3ff; color: var(--primary); }
+        .btn-logout { background: var(--danger); color: white; }
+
+        .container { max-width: 720px; margin: 25px auto; padding: 0 15px; }
+        .card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        .hidden { display: none !important; }
+
+        input, textarea {
+            width: 100%; padding: 12px; margin: 8px 0 14px; border: 1px solid #dddfe2;
+            border-radius: 8px; font-size: 1rem; background: #f5f6f7;
+        }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); background: #fff; }
+        .btn-primary {
+            background: var(--primary); color: white; border: none; padding: 12px 20px;
+            border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%;
+        }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; width: auto; }
+        .btn-danger { background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .btn-success { background: var(--success); color: white; border: none; border-radius: 6px; cursor: pointer; }
+
+        .post-header { display: flex; justify-content: space-between; align-items: center; }
+        .post-author { font-weight: 700; font-size: 1.05rem; color: var(--text); }
+        .post-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; margin-right: 6px; }
+        .badge-admin { background: var(--primary); color: white; }
+        .post-time { font-size: 0.8rem; color: var(--muted); }
+        .post-body { margin: 12px 0; font-size: 1.05rem; line-height: 1.5; white-space: pre-wrap; }
+        .post-actions {
+            border-top: 1px solid #ced0d4; padding-top: 10px; display: flex; gap: 15px; align-items: center;
+        }
+        .like-btn {
+            background: transparent; border: none; color: var(--muted); font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.95rem; padding: 6px 12px; border-radius: 6px;
+        }
+        .like-btn:hover { background: #f2f2f2; }
+        .like-btn.liked { color: var(--primary); }
+
+        .admin-box { background: var(--admin-bg); border: 2px solid var(--admin-border); }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 12px; font-size: 0.9rem; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: right; }
+        th { background: #f8f9fa; }
+        .status-banned { color: var(--danger); font-weight: bold; }
+        .status-active { color: var(--success); font-weight: bold; }
+
+        .profile-header { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px; }
+        .avatar {
+            width: 80px; height: 80px; background: var(--primary); color: white; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <nav id="navbar" class="hidden">
+        <h1 class="logo" onclick="switchView('feed')">FapioSocial</h1>
+        <div class="nav-links">
+            <button id="btnFeed" class="nav-btn active" onclick="switchView('feed')">الرئيسية</button>
+            <button id="btnProfile" class="nav-btn" onclick="switchView('profile')">صفحتي الشخصية</button>
+            <button id="btnAdmin" class="nav-btn hidden" style="background:#ffb300; color:#000;" onclick="switchView('admin')">👑 لوحة الأدمن</button>
+            <button class="nav-btn btn-logout" onclick="logoutUser()">خروج</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="authView" class="card" style="max-width: 440px; margin: 50px auto;">
+            <h2 style="color: var(--primary); text-align: center; margin-bottom: 5px;">FapioSocial</h2>
+            <p id="authSubtitle" style="text-align: center; color: var(--muted); margin-top: 0;">سجل دخولك للتواصل مع أصدقائك</p>
+
+            <div id="registerFields" class="hidden">
+                <input type="text" id="regName" placeholder="الاسم بالكامل (مثال: فابيو وسام)">
+                <input type="text" id="regBio" placeholder="نبذة مختصرة عنك (Bio)">
+            </div>
+
+            <input type="email" id="authEmail" placeholder="البريد الإلكتروني">
+            <input type="password" id="authPassword" placeholder="كلمة المرور (6 أحرف على الأقل)">
+
+            <button id="authSubmitBtn" class="btn-primary" onclick="handleAuth()">تسجيل الدخول</button>
+
+            <p style="text-align: center; margin-top: 15px;">
+                <a href="javascript:void(0)" id="toggleAuthLink" onclick="toggleAuthMode()" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+                    إنشاء حساب جديد
+                </a>
+            </p>
+        </div>
+
+        <div id="feedView" class="hidden">
+            <div id="verifyBanner" class="card hidden" style="background: #e7f3ff; border: 1px solid var(--primary);">
+                <strong>📩 تم إرسال رسالة تفعيل لبريدك الإلكتروني!</strong>
+                <p style="margin: 5px 0 10px; font-size: 0.9rem;">افتح بريدك الإلكتروني (أو مجلد Spam) واضغط على رابط التفعيل لتأكيد حسابك.</p>
+                <button class="btn-primary btn-sm" onclick="resendVerification()">إعادة إرسال رابط التفعيل</button>
+            </div>
+
+            <div class="card">
+                <textarea id="postInput" rows="3" placeholder="بماذا تفكر؟ اكتب منشورك هنا..."></textarea>
+                <button class="btn-primary btn-sm" onclick="publishPost()">نشر المنشور</button>
+            </div>
+
+            <div id="postsContainer">جاري تحميل المنشورات...</div>
+        </div>
+
+        <div id="profileView" class="card hidden">
+            <div class="profile-header">
+                <div class="avatar" id="profileAvatar">F</div>
+                <h2 id="profileName" style="margin: 10px 0 5px;"></h2>
+                <p id="profileEmail" style="color: var(--muted); margin: 0;"></p>
+                <span id="profileRoleBadge" class="post-badge badge-admin" style="display:inline-block; margin-top:8px;"></span>
+            </div>
+            <div>
+                <label><strong>نبذتي الشخصية (Bio):</strong></label>
+                <input type="text" id="editBioInput">
+                <button class="btn-primary btn-sm" onclick="updateBio()">حفظ التعديلات</button>
+            </div>
+        </div>
+
+        <div id="adminView" class="card admin-box hidden">
+            <h3>👑 لوحة تحكم الأدمن وإدارة الحسابات</h3>
+            <p>يمكنك من هنا متابعة جميع المستخدمين المسجلين، حظر أي حساب مخالف، أو فك الحظر عنه:</p>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>الصلاحية</th>
+                            <th>الحالة</th>
+                            <th>التحكم</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminUsersTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, 
+            sendEmailVerification, onAuthStateChanged, signOut 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, 
+            collection, addDoc, onSnapshot, query, orderBy, arrayUnion, arrayRemove 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5QmxZGgQcAzB4s8ywwkepDWj6AulrRtY",
+            authDomain: "fapio-47351.firebaseapp.com",
+            projectId: "fapio-47351",
+            storageBucket: "fapio-47351.firebasestorage.app",
+            messagingSenderId: "671040511338",
+            appId: "1:671040511338:web:a052478e9d284ff4f71913",
+            measurementId: "G-Q6MPR30KW5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let isRegister = false;
+        let currentUserData = null;
+
+        window.toggleAuthMode = () => {
+            isRegister = !isRegister;
+            document.getElementById('registerFields').classList.toggle('hidden', !isRegister);
+            document.getElementById('authSubmitBtn').innerText = isRegister ? 'إنشاء حساب وإرسال رسالة التفعيل' : 'تسجيل الدخول';
+            document.getElementById('authSubtitle').innerText = isRegister ? 'أنشئ حساباً جديداً وانضم للمنصة' : 'سجل دخولك للتواصل مع أصدقائك';
+            document.getElementById('toggleAuthLink').innerText = isRegister ? 'لديك حساب بالفعل؟ سجل دخول' : 'إنشاء حساب جديد';
+        };
+
+        window.handleAuth = async () => {
+            const email = document.getElementById('authEmail').value.trim().toLowerCase();
+            const password = document.getElementById('authPassword').value;
+            const btn = document.getElementById('authSubmitBtn');
+
+            if (!email || !password) return alert("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+
+            btn.disabled = true;
+            btn.innerText = "جاري التنفيذ...";
+
+            try {
+                if (isRegister) {
+                    const name = document.getElementById('regName').value.trim();
+                    const bio = document.getElementById('regBio').value.trim() || "مستخدم جديد في FapioSocial";
+                    if (!name) {
+                        btn.disabled = false;
+                        btn.innerText = 'إنشاء حساب وإرسال رسالة التفعيل';
+                        return alert("يرجى إدخال الاسم بالكامل");
+                    }
+
+                    // التحقق هل يوجد مستخدمين سابقين أم أنت أول مسجل (الأدمن)
+                    const existingUsers = await getDocs(collection(db, "users"));
+                    const assignedRole = existingUsers.empty ? 'admin' : 'user';
+
+                    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+                    await sendEmailVerification(userCred.user);
+
+                    await setDoc(doc(db, "users", userCred.user.uid), {
+                        uid: userCred.user.uid,
+                        name: name,
+                        email: email,
+                        bio: bio,
+                        role: assignedRole,
+                        banned: false,
+                        createdAt: new Date().toISOString()
+                    });
+
+                    alert("تم إنشاء الحساب بنجاح! وتم إرسال رسالة تفعيل لبريدك الإلكتروني.");
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+            } catch (error) {
+                alert("خطأ: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = isRegister ? 'إنشاء حساب وإرسال رسالة التفعيل' : 'تسجيل الدخول';
+            }
+        };
+
+        window.resendVerification = async () => {
+            if (auth.currentUser) {
+                await sendEmailVerification(auth.currentUser);
+                alert("تم إعادة إرسال رسالة التفعيل إلى بريدك الإلكتروني!");
+            }
+        };
+
+        window.logoutUser = () => signOut(auth);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists()) {
+                    currentUserData = userSnap.data();
+
+                    if (currentUserData.banned && currentUserData.role !== 'admin') {
+                        alert("تم حظر حسابك من قبل إدارة الموقع.");
+                        await signOut(auth);
+                        return;
+                    }
+
+                    document.getElementById('authView').classList.add('hidden');
+                    document.getElementById('navbar').classList.remove('hidden');
+                    switchView('feed');
+
+                    document.getElementById('verifyBanner').classList.toggle('hidden', user.emailVerified);
+
+                    document.getElementById('profileAvatar').innerText = currentUserData.name.charAt(0).toUpperCase();
+                    document.getElementById('profileName').innerText = currentUserData.name;
+                    document.getElementById('profileEmail').innerText = currentUserData.email;
+                    document.getElementById('editBioInput').value = currentUserData.bio;
+                    document.getElementById('profileRoleBadge').innerText = currentUserData.role === 'admin' ? '👑 Admin (مدير المنصة)' : 'User (مستخدم)';
+
+                    if (currentUserData.role === 'admin') {
+                        document.getElementById('btnAdmin').classList.remove('hidden');
+                        listenToAllUsers();
+                    } else {
+                        document.getElementById('btnAdmin').classList.add('hidden');
+                    }
+
+                    listenToPosts();
+                }
+            } else {
+                currentUserData = null;
+                document.getElementById('authView').classList.remove('hidden');
+                document.getElementById('navbar').classList.add('hidden');
+                document.getElementById('feedView').classList.add('hidden');
+                document.getElementById('profileView').classList.add('hidden');
+                document.getElementById('adminView').classList.add('hidden');
+            }
+        });
+
+        window.switchView = (view) => {
+            ['feedView', 'profileView', 'adminView'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['btnFeed', 'btnProfile', 'btnAdmin'].forEach(id => document.getElementById(id).classList.remove('active'));
+
+            document.getElementById(view + 'View').classList.remove('hidden');
+            document.getElementById('btn' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
+        };
+
+        window.publishPost = async () => {
+            const content = document.getElementById('postInput').value.trim();
+            if (!content) return;
+
+            await addDoc(collection(db, "posts"), {
+                authorId: currentUserData.uid,
+                authorName: currentUserData.name,
+                authorRole: currentUserData.role,
+                content: content,
+                likes: [],
+                timestamp: Date.now(),
+                dateText: new Date().toLocaleString('ar-EG')
+            });
+
+            document.getElementById('postInput').value = '';
+        };
+
+        function listenToPosts() {
+            const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('postsContainer');
+                container.innerHTML = '';
+
+                if (snapshot.empty) {
+                    container.innerHTML = '<div class="card" style="text-align:center; color:#65676b;">لا توجد منشورات بعد.. اكتب أول منشور!</div>';
+                    return;
+                }
+
+                snapshot.forEach((docSnap) => {
+                    const post = docSnap.data();
+                    const postId = docSnap.id;
+                    const isLiked = post.likes.includes(currentUserData.uid);
+                    const canDelete = currentUserData.role === 'admin' || post.authorId === currentUserData.uid;
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="post-header">
+                            <div>
+                                <span class="post-author">${post.authorName}</span>
+                                ${post.authorRole === 'admin' ? '<span class="post-badge badge-admin">Admin</span>' : ''}
+                                <div class="post-time">${post.dateText}</div>
+                            </div>
+                            ${canDelete ? `<button class="btn-danger btn-sm" onclick="deletePost('${postId}')">حذف</button>` : ''}
+                        </div>
+                        <div class="post-body">${post.content}</div>
+                        <div class="post-actions">
+                            <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${postId}', ${isLiked})">
+                                👍 أعجبني (${post.likes.length})
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        window.toggleLike = async (postId, isLiked) => {
+            const postRef = doc(db, "posts", postId);
+            await updateDoc(postRef, {
+                likes: isLiked ? arrayRemove(currentUserData.uid) : arrayUnion(currentUserData.uid)
+            });
+        };
+
+        window.deletePost = async (postId) => {
+            if (confirm("هل أنت متأكد من حذف هذا المنشور؟")) {
+                await deleteDoc(doc(db, "posts", postId));
+            }
+        };
+
+        window.updateBio = async () => {
+            const newBio = document.getElementById('editBioInput').value.trim();
+            await updateDoc(doc(db, "users", currentUserData.uid), { bio: newBio });
+            alert("تم تحديث بياناتك الشخصية!");
+        };
+
+        function listenToAllUsers() {
+            onSnapshot(collection(db, "users"), (snapshot) => {
+                const tbody = document.getElementById('adminUsersTable');
+                tbody.innerHTML = '';
+
+                snapshot.forEach((docSnap) => {
+                    const u = docSnap.data();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${u.name}</td>
+                        <td>${u.email}</td>
+                        <td><strong>${u.role.toUpperCase()}</strong></td>
+                        <td class="${u.banned ? 'status-banned' : 'status-active'}">
+                            ${u.banned ? 'محظور 🚫' : 'نشط ✅'}
+                        </td>
+                        <td>
+                            ${u.role !== 'admin' ? `
+                                <button class="${u.banned ? 'btn-success' : 'btn-danger'} btn-sm" 
+                                    onclick="toggleBan('${u.uid}', ${u.banned})">
+                                    ${u.banned ? 'فك الحظر' : 'حظر الحساب'}
+                                </button>
+                            ` : '---'}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        window.toggleBan = async (uid, currentStatus) => {
+            await updateDoc(doc(db, "users", uid), { banned: !currentStatus });
+        };
+    </script>
+</body>
+</html>
